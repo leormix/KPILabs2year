@@ -2,7 +2,7 @@ erDiagram
     CATEGORY ||--o{ PRODUCT : contains
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ ORDER_ITEM : includes
-    PRODUCT ||--|{ ORDER_ITEM : ordered_in
+    PRODUCT ||--o{ ORDER_ITEM : ordered_in
 
     CUSTOMER {
         string id PK
@@ -12,11 +12,12 @@ erDiagram
         date createdAt
     }    
 
-    CATEGORY{
+    CATEGORY {
         string id PK
         string name
         string description
     }
+
     PRODUCT {
         string id PK
         string categoryId FK 
@@ -26,6 +27,7 @@ erDiagram
         float price
         number stockQuantity
     }
+
     ORDER {
         string id PK
         string customerId FK
@@ -33,10 +35,11 @@ erDiagram
         string status
         date createdAt
     }
+
     ORDER_ITEM {
         string id PK
-        number orderId FK
-        number productId FK
+        string orderId FK
+        string productId FK
         number quantity
         float unitPrice
     }
