@@ -1,0 +1,43 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Користувач" as User
+actor "Зареєстрований покупець" as Customer
+actor "Менджер магазину / Адміністратор" as Admin
+
+actor "Payment Gateway" as PaymentGateway <<External System>>
+actor "Notification Service" as NotificationService <<External System>>
+
+User <|-- Customer
+User <|-- Admin
+
+rectangle "Онлайн-платформа продажу скейтборд-спорядження" {
+    usecase "Переглядати каталог товарів" as UC_Catalog
+    usecase "Додавати товари в кошик" as UC_Cart
+    usecase "Оформлювати замовлення" as UC_Order
+    usecase "Перевірити залишки на складі" as UC_CheckStock
+    usecase "Оплатити замовлення онлайн" as UC_Payment
+    usecase "Надіслати квитанцію на email" as UC_Notify
+
+    usecase "Управляти товарами в каталозі" as UC_ManageCatalog
+    usecase "Управляти залишками на складі" as UC_ManageStock
+    usecase "Змінювати статус замовлень" as UC_UpdateStatus
+
+    User --> UC_Catalog
+
+    Customer --> UC_Cart
+    Customer --> UC_Order
+
+    UC_Order ..> UC_CheckStock : <<include>>
+    UC_Payment ..> UC_Order : <<extend>>
+    UC_Payment ..> UC_Notify : <<include>>
+
+    UC_Payment --> PaymentGateway
+    UC_Notify --> NotificationService
+
+    Admin --> UC_ManageCatalog
+    Admin --> UC_ManageStock
+    Admin --> UC_UpdateStatus
+}
+@enduml
