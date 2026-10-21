@@ -14,7 +14,7 @@
 * **Store Manager / Admin (Менеджер магазину):**
   * Додавати та редагувати позиції товарів у каталозі.
   * Контролювати та поповнювати залишки на складі (stockQuantity).
-  * Змінювати статус замовлень (PENDING / DELIVERED / CANCELLED).
+  * Змінювати статус замовлень (PENDING / DELIVERED / CANCELLED / CONFIRMED).
 
 ### 2.2. Зовнішні системи та сервіси (External Systems)
 * **Payment Gateway (Платіжний шлюз):**
