@@ -1,43 +1,67 @@
 @startuml
 autonumber
-actor Customer as "Покупець"
-participant OrderController as "OrderController"
-participant Gateway as "PaymentGateway"
-database DB as "Database"
+title US-3 / UC_Payment: Обробка онлайн-оплати
 
-Customer -> OrderController: processPayment(orderId, paymentDetails)
-activate OrderController
+skinparam sequence {
+    ArrowColor DeepSkyBlue
+    ActorBorderColor DarkBlue
+    ActorBackgroundColor LightCyan
+    LifeLineBorderColor Grey
+    LifeLineBackgroundColor White
+    ParticipantBorderColor DarkSlateGray
+    ParticipantBackgroundColor LightGrey
+}
 
-OrderController -> Gateway: createPaymentIntent(orderId, amount)
-activate Gateway
-Gateway --> OrderController: redirectUrl / paymentToken
-deactivate Gateway
+actor "Клієнт" as Customer #LightCyan
+participant "OrderController\n(Контролер)" as OC #LightBlue
+participant "PaymentGateway\n(Платіжний шлюз)" as PG #LightSalmon
+database "Database\n(БД)" as DB #LightYellow
 
-OrderController --> Customer: Redirect to Payment Gateway
+Customer -> OC : POST /orders/{orderId}/pay
+activate OC
 
-Customer -> Gateway: Enter card details & Confirm
+OC -> DB : getOrder(orderId)
+activate DB
+DB --> OC : order(status=PENDING, amount)
+deactivate DB
 
-alt Успішна оплата (Webhook)
-    Gateway -> OrderController: webhook: payment.success(orderId)
-    activate OrderController
-    
-    OrderController -> DB: UPDATE "Order" SET status = 'CONFIRMED'
+alt [Замовлення в статусі PENDING]
+  OC -> PG : createPaymentSession(orderId, amount)
+  activate PG
+  PG --> OC : paymentSessionUrl
+  deactivate PG
+
+  OC --> Customer : 302 Redirect to paymentSessionUrl
+  deactivate OC
+
+  Customer -> PG : enterCardAndConfirm(sessionId)
+  activate PG
+
+  PG -> OC : paymentCallback(sessionId, status)
+  activate OC
+  
+  alt [status == SUCCESS]
+    OC -> DB : updateOrderStatus(orderId, CONFIRMED)
     activate DB
-    DB --> OrderController: updated
+    DB --> OC : updated
     deactivate DB
-    
-    OrderController --> Customer: Show Success Page
-    deactivate OrderController
-else Помилка оплати / Відхилено
-    Gateway -> OrderController: webhook: payment.failed(orderId)
-    activate OrderController
-    
-    OrderController -> DB: UPDATE "Order" SET status = 'CANCELLED'
+    OC --> PG : 200 OK
+    PG --> Customer : payment result page (success)
+  else [status == FAILED]
+    OC -> DB : recordPaymentFailure(orderId, error)
     activate DB
-    DB --> OrderController: updated
+    DB --> OC : failureSaved (status stays PENDING)
     deactivate DB
-    
-    OrderController --> Customer: Show Payment Error Page
-    deactivate OrderController
+    OC --> PG : 200 OK
+    PG --> Customer : payment result page (failure)
+  end
+  
+  deactivate OC
+  deactivate PG
+
+else [Замовлення не очікує оплати (інший статус)]
+  OC --> Customer : 409 Conflict "Замовлення не очікує оплати"
+  deactivate OC
 end
+
 @enduml
