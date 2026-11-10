@@ -1,0 +1,41 @@
+@startuml
+autonumber
+title US-2 / UC_CheckStock: Помилка оформлення через нестачу товару
+
+skinparam sequence {
+    ArrowColor DeepSkyBlue
+    ActorBorderColor DarkBlue
+    ActorBackgroundColor LightCyan
+    LifeLineBorderColor Grey
+    LifeLineBackgroundColor White
+    ParticipantBorderColor DarkSlateGray
+    ParticipantBackgroundColor LightGrey
+}
+
+actor "Клієнт" as Customer #LightCyan
+participant "OrderController\n(Контролер)" as OC #LightBlue
+participant "StockService\n(Склад)" as SS #LightGreen
+database "Database\n(БД)" as DB #LightYellow
+
+Customer -> OC : POST /orders (cartItems)
+activate OC
+
+OC -> SS : checkStock(items)
+activate SS
+
+SS -> DB : getStockQuantities(productIds)
+activate DB
+DB --> SS : stockQuantities
+deactivate DB
+
+alt [Запитувана кількість > Залишок на складі]
+  SS --> OC : StockUnavailableException(productId, requestedQty, availableQty)
+  OC --> Customer : 409 Conflict "Недостатньо товару"
+else [Товару достатньо]
+  SS --> OC : StockAvailable
+  OC --> Customer : 200 OK "Товар доступний"
+end
+
+deactivate SS
+deactivate OC
+@enduml

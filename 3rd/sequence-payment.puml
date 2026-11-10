@@ -1,0 +1,43 @@
+@startuml
+autonumber
+actor Customer as "Покупець"
+participant OrderController as "OrderController"
+participant Gateway as "PaymentGateway"
+database DB as "Database"
+
+Customer -> OrderController: processPayment(orderId, paymentDetails)
+activate OrderController
+
+OrderController -> Gateway: createPaymentIntent(orderId, amount)
+activate Gateway
+Gateway --> OrderController: redirectUrl / paymentToken
+deactivate Gateway
+
+OrderController --> Customer: Redirect to Payment Gateway
+
+Customer -> Gateway: Enter card details & Confirm
+
+alt Успішна оплата (Webhook)
+    Gateway -> OrderController: webhook: payment.success(orderId)
+    activate OrderController
+    
+    OrderController -> DB: UPDATE "Order" SET status = 'CONFIRMED'
+    activate DB
+    DB --> OrderController: updated
+    deactivate DB
+    
+    OrderController --> Customer: Show Success Page
+    deactivate OrderController
+else Помилка оплати / Відхилено
+    Gateway -> OrderController: webhook: payment.failed(orderId)
+    activate OrderController
+    
+    OrderController -> DB: UPDATE "Order" SET status = 'CANCELLED'
+    activate DB
+    DB --> OrderController: updated
+    deactivate DB
+    
+    OrderController --> Customer: Show Payment Error Page
+    deactivate OrderController
+end
+@enduml

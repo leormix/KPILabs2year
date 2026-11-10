@@ -1,0 +1,54 @@
+@startuml
+autonumber
+title US-1 / UC_Order: Успішне оформлення замовлення
+
+skinparam sequence {
+    ArrowColor DeepSkyBlue
+    ActorBorderColor DarkBlue
+    ActorBackgroundColor LightCyan
+    LifeLineBorderColor Grey
+    LifeLineBackgroundColor White
+    ParticipantBorderColor DarkSlateGray
+    ParticipantBackgroundColor LightGrey
+}
+
+actor "Клієнт" as Customer #LightCyan
+participant "OrderController\n(Контролер)" as OC #LightBlue
+participant "StockService\n(Склад)" as SS #LightGreen
+database "Database\n(БД)" as DB #LightYellow
+participant "NotificationService\n(Сповіщення)" as NS #LightPink
+
+Customer -> OC : POST /orders (cartItems)
+activate OC
+
+OC -> SS : reserveStock(orderDraft, cartItems)
+activate SS
+
+SS -> DB : checkStockQuantities(productIds)
+activate DB
+DB --> SS : stockQuantities
+deactivate DB
+
+SS -> DB : decrementStockQuantities(items)
+activate DB
+DB --> SS : stockUpdated
+deactivate DB
+
+SS --> OC : reservationConfirmed(reservationId)
+deactivate SS
+
+OC -> DB : saveOrder(order, items, unitPriceSnapshot)
+activate DB
+DB --> OC : orderSaved(orderId, status=PENDING)
+deactivate DB
+
+opt [Асинхронне підтвердження]
+  OC ->> NS : sendOrderConfirmationAsync(orderId, customerEmail)
+  activate NS
+  NS --> OC : accepted
+  deactivate NS
+end
+
+OC --> Customer : 201 Created {orderId}
+deactivate OC
+@enduml
