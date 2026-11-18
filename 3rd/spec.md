@@ -45,10 +45,11 @@
 * **`Database`**
 
 ### Кроки виконання:
-1. `Customer` вибирає опцію онлайн-оплати для створеного замовлення в статусі `PENDING`.
-2. `OrderController` створює платіжну сесію та перенаправляє `Customer` до `PaymentGateway`.
-3. `Customer` вводять дані картки та підтверджують платіж у `PaymentGateway`.
-4. **[Варіанти розвитку подій]:**
-   * *Успішна оплата:* `PaymentGateway` надсилає успішний Callback до `OrderController`. `OrderController` оновлює статус замовлення в `Database` на `CONFIRMED`.
-   * *Невдала оплата:* `PaymentGateway` повертає помилку оплати. `OrderController` фіксує помилку, залишаючи замовлення в статусі `PENDING`.
-5. `OrderController` повертає результат операції клієнту.
+1. `Customer` ініціює запит на онлайн-оплату для створеного замовлення.
+2. `OrderController` перевіряє в `Database` поточний статус замовлення. Якщо статус відрізняється від `PENDING`, контролер перериває процес і повертає `Customer` помилку `409 Conflict` ("Замовлення не очікує оплати").
+3. Якщо статус замовлення `PENDING`, `OrderController` створює платіжну сесію та перенаправляє `Customer` до `PaymentGateway`.
+4. `Customer` вводить дані картки та підтверджує платіж у `PaymentGateway`.
+5. **[Варіанти розвитку подій]:** `PaymentGateway` надсилає Callback до `OrderController`:
+   * *Успішна оплата:* `OrderController` оновлює статус замовлення в `Database` на `CONFIRMED`.
+   * *Невдала оплата:* `OrderController` фіксує помилку, залишаючи замовлення в статусі `PENDING`.
+6. `OrderController` повертає результат операції клієнту.
