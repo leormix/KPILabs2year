@@ -32,14 +32,12 @@ alt [Замовлення в статусі PENDING]
   deactivate PG
 
   OC --> Customer : 302 Redirect to paymentSessionUrl
-  deactivate OC
 
   Customer -> PG : enterCardAndConfirm(sessionId)
   activate PG
 
   PG -> OC : paymentCallback(sessionId, status)
-  activate OC
-  
+
   alt [status == SUCCESS]
     OC -> DB : updateOrderStatus(orderId, CONFIRMED)
     activate DB
@@ -56,12 +54,11 @@ alt [Замовлення в статусі PENDING]
     PG --> Customer : payment result page (failure)
   end
   
-  deactivate OC
   deactivate PG
 
 else [Замовлення не очікує оплати (інший статус)]
   OC --> Customer : 409 Conflict "Замовлення не очікує оплати"
-  deactivate OC
 end
 
+deactivate OC 
 @enduml
